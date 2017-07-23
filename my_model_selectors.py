@@ -76,8 +76,29 @@ class SelectorBIC(ModelSelector):
         """
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection based on BIC scores
-        raise NotImplementedError
+        bic_score = float("-inf")
+        best_model = None
+        for n in range(self.min_n_components, self.max_n_components+1):
+            try:
+                hmm_model = GaussianHMM(n_components=n, 
+                                        covariance_type="diag", 
+                                        n_iter=1000,
+                                        random_state=self.random_state, 
+                                        verbose=False).fit(self.X, self.lengths)
+
+                logL = hmm_model.score(self.X, self.lengths)
+                trans_matrix = hmm_model.transmat_
+                zeroes = sum(1 for row in trans_matrix for i in row if not i)
+                p = n * (n-1) * - zeroes
+                score = -2 * logL + p * math.log(n)
+                # print(score)
+                if (score > bic_score):
+                    bic_score = score
+                    best_model = hmm_model
+            except:
+                pass
+        
+        return best_model
 
 
 class SelectorDIC(ModelSelector):
@@ -104,5 +125,33 @@ class SelectorCV(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection using CV
-        raise NotImplementedError
+        best_score = float("-inf")
+        best_model = None
+        split_method = KFold()
+
+        for n in range(self.min_n_components, self.max_n_components+1):
+            score = 0
+            try:
+                for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
+                    split_train_x, split_train_lengths = combine_sequences(cv_train_idx, self.sequences)
+                    hmm_model = GaussianHMM(n_components=n, 
+                                            covariance_type="diag", 
+                                            n_iter=1000,
+                                            random_state=self.random_state, 
+                                            verbose=False).fit(split_train_x, split_train_lengths)
+
+                    split_test_x, split_test_lengths = combine_sequences(cv_test_idx, self.sequences)
+                    logL = hmm_model.score(split_test_x, split_test_lengths)
+                    score = score + logL
+                # print(score)
+                if (score > best_score):
+                    best_score = score
+                    best_model = GaussianHMM(n_components=n, 
+                                            covariance_type="diag", 
+                                            n_iter=1000,
+                                            random_state=self.random_state, 
+                                            verbose=False).fit(self.X, self.lengths)
+            except:
+                pass
+        
+        return best_model
