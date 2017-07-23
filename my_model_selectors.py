@@ -95,7 +95,9 @@ class SelectorBIC(ModelSelector):
                 if (score > bic_score):
                     bic_score = score
                     best_model = hmm_model
-            except:
+            except Exception as e:
+                # print("error at step: " + str(n))
+                # print(e)
                 pass
         
         return best_model
@@ -127,7 +129,7 @@ class SelectorCV(ModelSelector):
 
         best_score = float("-inf")
         best_model = None
-        split_method = KFold()
+        split_method = KFold(n_splits=2)
 
         for n in range(self.min_n_components, self.max_n_components+1):
             score = 0
@@ -151,7 +153,9 @@ class SelectorCV(ModelSelector):
                                             n_iter=1000,
                                             random_state=self.random_state, 
                                             verbose=False).fit(self.X, self.lengths)
-            except:
+            except Exception as e:
+                # print("error at step: " + str(n))
+                # print(e)
                 pass
         
         return best_model
