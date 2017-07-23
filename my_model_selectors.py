@@ -89,7 +89,7 @@ class SelectorBIC(ModelSelector):
                 logL = hmm_model.score(self.X, self.lengths)
                 trans_matrix = hmm_model.transmat_
                 zeroes = sum(1 for row in trans_matrix for i in row if not i)
-                p = n * (n-1) * - zeroes
+                p = n * (n-1) - zeroes
                 score = -2 * logL + p * math.log(n)
                 # print(score)
                 if (score > bic_score):
